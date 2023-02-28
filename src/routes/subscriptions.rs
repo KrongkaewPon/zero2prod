@@ -13,7 +13,8 @@ pub struct FormData {
 #[tracing::instrument(
 name = "Adding a new subscriber", skip(form, pool),
 fields(
-request_id = %Uuid::new_v4(), subscriber_email = %form.email, subscriber_name= %form.name
+    // request_id = %Uuid::new_v4(),
+ subscriber_email = %form.email, subscriber_name= %form.name
 ) )]
 pub async fn subscribe(form: web::Form<FormData>, pool: web::Data<PgPool>) -> HttpResponse {
     match insert_subscriber(&pool, &form).await {
