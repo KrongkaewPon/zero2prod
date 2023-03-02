@@ -15,9 +15,7 @@ async fn main() -> std::io::Result<()> {
 
     // Panic if we can't read configuration
     let configuration = get_configuration().expect("Failed to read configuration."); // We have removed the hard-coded `8000` - it's now coming from our settings!
-    let connection_pool =
-        PgPool::connect_lazy(&configuration.database.connection_string().expose_secret())
-            .expect("Failed to connect to Postgres.");
+    let connection_pool = PgPoolOptions::new().connect_lazy_with(configuration.database.with_db());
 
     let address = format!(
         "{}:{}",
