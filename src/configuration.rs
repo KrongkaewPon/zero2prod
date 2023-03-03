@@ -62,6 +62,7 @@ impl Environment {
         }
     }
 }
+
 impl TryFrom<String> for Environment {
     type Error = String;
     fn try_from(s: String) -> Result<Self, Self::Error> {
