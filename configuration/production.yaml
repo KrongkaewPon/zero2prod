@@ -3,7 +3,7 @@ application:
 database:
   require_ssl: true
 email_client:
-  # Value retrieved from Postmark's API documentation
   base_url: "https://api.postmarkapp.com"
-  # Use the single sender email you authorised on Postmark!
-  sender_email: "something@gmail.com"
+  sender_email: "krongkaew@enres.co"
+  authorization_token: "d72be1ae-eb0d-4a4b-afe8-00e59af10299"
+  timeout_milliseconds: 10000

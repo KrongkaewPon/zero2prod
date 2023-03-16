@@ -1,39 +1,59 @@
-use crate::helpers::spawn_app;
+use actix_web::{web, HttpResponse};
+use sqlx::PgPool;
+use uuid::Uuid;
 
-use reqwest::Url;
-use wiremock::matchers::{method, path};
-use wiremock::{Mock, ResponseTemplate};
+#[derive(serde::Deserialize)]
+pub struct Parameters {
+    subscription_token: String,
+}
 
-#[tokio::test]
-async fn the_link_returned_by_subscribe_returns_a_200_if_called() {
-    // Arrange
-    let app = spawn_app().await;
-    let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
-    Mock::given(path("/email"))
-        .and(method("POST"))
-        .respond_with(ResponseTemplate::new(200))
-        .mount(&app.email_server)
-        .await;
-    app.post_subscriptions(body.into()).await;
-    let email_request = &app.email_server.received_requests().await.unwrap()[0];
-    let body: serde_json::Value = serde_json::from_slice(&email_request.body).unwrap();
-    let get_link = |s: &str| {
-        let links: Vec<_> = linkify::LinkFinder::new()
-            .links(s)
-            .filter(|l| *l.kind() == linkify::LinkKind::Url)
-            .collect();
-        assert_eq!(links.len(), 1);
-        links[0].as_str().to_owned()
+#[tracing::instrument(name = "Confirm a pending subscriber", skip(parameters, pool))]
+pub async fn confirm(parameters: web::Query<Parameters>, pool: web::Data<PgPool>) -> HttpResponse {
+    let id = match get_subscriber_id_from_token(&pool, &parameters.subscription_token).await {
+        Ok(id) => id,
+        Err(_) => return HttpResponse::InternalServerError().finish(),
     };
-    let raw_confirmation_link = &get_link(&body["HtmlBody"].as_str().unwrap());
-    let mut confirmation_link = Url::parse(raw_confirmation_link).unwrap();
+    match id {
+        // Non-existing token!
+        None => HttpResponse::Unauthorized().finish(),
+        Some(subscriber_id) => {
+            if confirm_subscriber(&pool, subscriber_id).await.is_err() {
+                return HttpResponse::InternalServerError().finish();
+            }
+            HttpResponse::Ok().finish()
+        }
+    }
+}
 
-    assert_eq!(confirmation_link.host_str().unwrap(), "127.0.0.1");
-    confirmation_link.set_port(Some(app.port)).unwrap();
+#[tracing::instrument(name = "Mark subscriber as confirmed", skip(subscriber_id, pool))]
+pub async fn confirm_subscriber(pool: &PgPool, subscriber_id: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"UPDATE subscriptions SET status = 'confirmed' WHERE id = $1"#,
+        subscriber_id,
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to execute query: {:?}", e);
+        e
+    })?;
+    Ok(())
+}
 
-    // Act
-    let response = reqwest::get(confirmation_link).await.unwrap();
-
-    // Assert
-    assert_eq!(response.status().as_u16(), 200);
+#[tracing::instrument(name = "Get subscriber_id from token", skip(subscription_token, pool))]
+pub async fn get_subscriber_id_from_token(
+    pool: &PgPool,
+    subscription_token: &str,
+) -> Result<Option<Uuid>, sqlx::Error> {
+    let result = sqlx::query!(
+        r#"SELECT subscriber_id FROM subscription_tokens WHERE subscription_token = $1"#,
+        subscription_token,
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to execute query: {:?}", e);
+        e
+    })?;
+    Ok(result.map(|r| r.subscriber_id))
 }
