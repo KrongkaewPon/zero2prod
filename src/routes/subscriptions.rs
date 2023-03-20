@@ -215,7 +215,7 @@ pub async fn subscribe(
     //     )
     // })?;
 
-    let mut transaction = pool
+    let  transaction = pool
         .begin()
         .await
         .context("Failed to acquire a Postgres connection from the pool")?;
