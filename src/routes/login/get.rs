@@ -1,8 +1,10 @@
 use actix_web::cookie::{time::Duration, Cookie};
 use actix_web::HttpRequest;
 use actix_web::{http::header::ContentType, web, HttpResponse};
+use actix_web_flash_messages::{IncomingFlashMessages, Level};
 use hmac::{Hmac, Mac};
 use secrecy::ExposeSecret;
+use std::fmt::Write;
 
 use crate::startup::HmacSecret;
 
@@ -24,7 +26,8 @@ impl QueryParams {
     }
 }
 
-pub async fn login_form(request: HttpRequest) -> HttpResponse {
+pub async fn login_form(flash_messages: IncomingFlashMessages) -> HttpResponse {
+    // Start - v1 HmacSecret
     // param query: Option<web::Query<QueryParams>>,secret: web::Data<HmacSecret>
     // let error_html = match query {
     //     None => "".into(),
@@ -42,17 +45,27 @@ pub async fn login_form(request: HttpRequest) -> HttpResponse {
     //         }
     //     },
     // };
+    // End - v1 HmacSecret
 
-    let error_html = match request.cookie("_flash") {
-        None => "".into(),
-        Some(cookie) => {
-            format!("<p><i>{}</i></p>", cookie.value())
-        }
-    };
+    // Start - v2 set cookie
+    // let error_html = match request.cookie("_flash") {
+    //     None => "".into(),
+    //     Some(cookie) => {
+    //         format!("<p><i>{}</i></p>", cookie.value())
+    //     }
+    // };
+    // send - .cookie(Cookie::new("_flash", e.to_string()))
+    // receive - .cookie(Cookie::build("_flash", "").max_age(Duration::ZERO).finish())
+    // End - v2 set cookie
+
+    let mut error_html = String::new();
+
+    for m in flash_messages.iter().filter(|m| m.level() == Level::Error) {
+        writeln!(error_html, "<p><i>{}</i></p>", m.content()).unwrap();
+    }
 
     let mut response = HttpResponse::Ok()
         .content_type(ContentType::html())
-        // .cookie(Cookie::build("_flash", "").max_age(Duration::ZERO).finish())
         .body(format!(
             r#"<!DOCTYPE html>
                 <html lang="en">

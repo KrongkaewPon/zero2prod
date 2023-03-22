@@ -5,6 +5,7 @@ use actix_web::http::header::LOCATION;
 use actix_web::http::StatusCode;
 use actix_web::HttpResponse;
 use actix_web::{web, ResponseError};
+use actix_web_flash_messages::FlashMessage;
 use hmac::{Hmac, Mac};
 use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
@@ -64,9 +65,10 @@ pub async fn login(
 
             // Err(InternalError::from_response(e, response))
 
+            FlashMessage::error(e.to_string()).send();
+
             let response = HttpResponse::SeeOther()
                 .insert_header((LOCATION, "/login"))
-                .cookie(Cookie::new("_flash", e.to_string()))
                 .finish();
 
             Err(InternalError::from_response(e, response))
