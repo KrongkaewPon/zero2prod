@@ -1,6 +1,6 @@
-#! configuration/base.yaml
 application:
   port: 8000
+  hmac_secret: "super-long-and-secret-random-key-needed-to-verify-message-integrity"
 database:
   host: "localhost"
   port: 5432
@@ -12,8 +12,3 @@ email_client:
   sender_email: "krongkaew@enres.co"
   authorization_token: "d72be1ae-eb0d-4a4b-afe8-00e59af10299"
   timeout_milliseconds: 10000
-# email_client:
-#   base_url: "https://api.postmarkapp.com"
-#   sender_email: "naravich@enres.co"
-#   authorization_token: "909a5191-0a12-4ce6-ba8a-9c0fa6ffae27"
-#   timeout_milliseconds: 10000
