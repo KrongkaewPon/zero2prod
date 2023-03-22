@@ -6,8 +6,8 @@ use crate::startup::HmacSecret;
 
 #[derive(serde::Deserialize)]
 pub struct QueryParams {
-    error: Option<String>,
-    tag: Option<String>,
+    error: String,
+    tag: String,
 }
 
 impl QueryParams {
@@ -26,7 +26,7 @@ pub async fn login_form(
     query: Option<web::Query<QueryParams>>,
     secret: web::Data<HmacSecret>,
 ) -> HttpResponse {
-    let error_html = match query.0 {
+    let error_html = match query {
         None => "".into(),
         Some(query) => match query.0.verify(&secret) {
             Ok(error) => {
