@@ -18,6 +18,8 @@ use crate::configuration::Settings;
 use crate::email_client::EmailClient;
 use crate::routes::admin_dashboard;
 use crate::routes::home;
+use crate::routes::log_out;
+use crate::routes::{change_password, change_password_form};
 use crate::routes::{confirm, health_check, publish_newsletter, subscribe};
 use crate::routes::{login, login_form};
 
@@ -125,6 +127,9 @@ async fn run(
             .route("/login", web::get().to(login_form))
             .route("/login", web::post().to(login))
             .route("/admin/dashboard", web::get().to(admin_dashboard))
+            .route("/admin/password", web::get().to(change_password_form))
+            .route("/admin/password", web::post().to(change_password))
+            .route("/admin/logout", web::post().to(log_out))
             // Register the connection as part of the application state
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
