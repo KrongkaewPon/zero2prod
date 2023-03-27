@@ -1,21 +1,16 @@
 use crate::session_state::TypedSession;
-use actix_session::Session;
-use actix_web::cookie::Cookie;
 use actix_web::error::InternalError;
-use actix_web::http::header::ContentType;
 use actix_web::http::header::LOCATION;
 use actix_web::http::StatusCode;
 use actix_web::HttpResponse;
 use actix_web::{web, ResponseError};
 use actix_web_flash_messages::FlashMessage;
-use hmac::{Hmac, Mac};
-use secrecy::{ExposeSecret, Secret};
+use secrecy::Secret;
 use sqlx::PgPool;
 
 use crate::authentication::AuthError;
 use crate::authentication::{validate_credentials, Credentials};
 use crate::routes::error_chain_fmt;
-use crate::startup::HmacSecret;
 #[derive(serde::Deserialize)]
 pub struct FormData {
     username: String,
@@ -96,20 +91,20 @@ impl ResponseError for LoginError {
         StatusCode::SEE_OTHER
     }
 
-    fn error_response(&self) -> HttpResponse {
-        let query_string = format!("error={}", urlencoding::Encoded::new(self.to_string()));
-        // We need the secret here - how do we get it?
-        let secret: &[u8] = todo!();
-        let hmac_tag = {
-            let mut mac = Hmac::<sha2::Sha256>::new_from_slice(secret).unwrap();
-            mac.update(query_string.as_bytes());
-            mac.finalize().into_bytes()
-        };
+    // fn error_response(&self) -> HttpResponse {
+    //     let query_string = format!("error={}", urlencoding::Encoded::new(self.to_string()));
+    //     // We need the secret here - how do we get it?
+    //     let secret: &[u8] = todo!();
+    //     let hmac_tag = {
+    //         let mut mac = Hmac::<sha2::Sha256>::new_from_slice(secret).unwrap();
+    //         mac.update(query_string.as_bytes());
+    //         mac.finalize().into_bytes()
+    //     };
 
-        HttpResponse::build(self.status_code())
-            .insert_header((LOCATION, format!("/login?{query_string}&tag={hmac_tag:x}")))
-            .finish()
-    }
+    //     HttpResponse::build(self.status_code())
+    //         .insert_header((LOCATION, format!("/login?{query_string}&tag={hmac_tag:x}")))
+    //         .finish()
+    // }
 }
 
 fn login_redirect(e: LoginError) -> InternalError<LoginError> {
