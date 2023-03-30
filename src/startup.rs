@@ -22,7 +22,9 @@ use crate::routes::admin_dashboard;
 use crate::routes::home;
 use crate::routes::log_out;
 use crate::routes::{change_password, change_password_form};
-use crate::routes::{confirm, health_check, publish_newsletter, subscribe};
+use crate::routes::{
+    confirm, health_check, publish_newsletter, publish_newsletter_form, subscribe,
+};
 use crate::routes::{login, login_form};
 
 // A new type to hold the newly built server and its port
@@ -122,7 +124,6 @@ async fn run(
             .route("/health_check", web::get().to(health_check))
             .route("/subscriptions", web::post().to(subscribe))
             .route("/subscriptions/confirm", web::get().to(confirm))
-            .route("/newsletters", web::post().to(publish_newsletter))
             .route("/", web::get().to(home))
             .route("/login", web::get().to(login_form))
             .route("/login", web::post().to(login))
@@ -130,6 +131,8 @@ async fn run(
                 web::scope("/admin")
                     .wrap(from_fn(reject_anonymous_users))
                     .route("/dashboard", web::get().to(admin_dashboard))
+                    .route("/newsletters", web::get().to(publish_newsletter_form))
+                    .route("/newsletters", web::post().to(publish_newsletter))
                     .route("/password", web::get().to(change_password_form))
                     .route("/password", web::post().to(change_password))
                     .route("/logout", web::post().to(log_out)),
